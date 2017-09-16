@@ -1,4 +1,4 @@
-# L2正則化、ドロップアウトもやってみた。
+# L2正則化、ドロップアウトもやってみた。 
 import numpy as np
 from sklearn.datasets import load_iris
 from sklearn import model_selection
