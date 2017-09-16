@@ -26,3 +26,4 @@ model.fit(X_train, y_train, epochs=300, batch_size=32, verbose=1)
 
 loss_and_metrics = model.evaluate(X_test,y_test,batch_size=32, verbose=0)
 print("\nloss:{} accuracy:{}".format(loss_and_metrics[0],loss_and_metrics[1]))
+ 
