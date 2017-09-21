@@ -33,7 +33,7 @@ tokens_input = Input(name='input', shape=(maxlen,))
 
 # we start off with an efficient embedding layer which maps
 # our vocab indices into embedding_dims dimensions
-emd = Embedding(len(word_index) + 1,
+emd = Embedding(word_index,
                 embedding_dims,
                 input_length=maxlen)(tokens_input)
 
