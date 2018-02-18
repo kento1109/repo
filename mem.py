@@ -85,3 +85,4 @@ labels = [0, 0, 1, 1]
 mem = MEM(eta=0.1, c=0.1, stop_num=1.0e-5)
 mem.fit(docs, labels)
 print mem.predict(['bad exciting good', 'bad boring'])
+
