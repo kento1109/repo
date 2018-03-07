@@ -30,3 +30,4 @@ for i, param in enumerate(params):
         plt.legend(loc="upper right")
         plt.tick_params(labelleft='off')
 plt.show()
+
