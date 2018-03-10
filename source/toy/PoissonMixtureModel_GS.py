@@ -33,6 +33,7 @@ Pi = dirichlet.rvs(alpha=alpha, size=1)
 S = np.zeros((MAXIter, N, K))
 # S = np.zeros((N, K))
 
+# Gibbs sampling
 for iter in range(MAXIter):
     for i, x in enumerate(X):
         # inference s
