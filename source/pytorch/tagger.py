@@ -1,6 +1,5 @@
 import os
 import sys
-sys.path.append('/data/sugimoto/xray/src')
 import subprocess
 import configparser
 import xray_utils
@@ -29,7 +28,7 @@ import shutil
 import pickle
 
 config = configparser.ConfigParser()
-config.read('/data/sugimoto/experiments/experiment.ini')
+config.read('experiment.ini')
 
 CT_DIR = config.get('FILE', 'ct_dir')
 TRAIN_FILE = config.get('FILE', 'train_file')
