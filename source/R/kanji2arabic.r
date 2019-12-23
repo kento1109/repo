@@ -1,3 +1,6 @@
+## The original code is bellow
+## https://qiita.com/dosec/items/c6aef40fae6977fd89ab
+
 TRANSUNIT <- hash(c("十", "百", "千"), c(10,100,1000))
 TRANSMANS <-　hash( "万", 10000)
 re_suji <- '[十拾百千万億兆\\d]+'
