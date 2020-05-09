@@ -59,7 +59,7 @@ def make_dic_format(word, tag, mc, manbyo=False):
             format_ += "*,"  # 品詞細分類3
             format_ += "*,"  # 活用形
             format_ += "*,"  # 活用型
-            format_ += name + tag + ","  # 原形
+            format_ += tag + "," if manbyo else name + tag + ","
             format_ += "*,"  # 読み
             format_ += "*"  # 発音
             return format_
