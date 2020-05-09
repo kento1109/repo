@@ -1,5 +1,9 @@
+# -*- coding: utf-8 -*-
 import MeCab
 import csv
+
+base_path = '/mnt/d/data/xray'
+
 
 def read_csv(target_file):
     with open(target_file, 'r') as f:
@@ -15,14 +19,12 @@ def write_file(target_file, formats):
             f.write("\n")
 
 
-def make_dic_format(word, tag, mc, yomi=False, manbyo=False):
+def make_dic_format(word, tag, mc, manbyo=False):
     name = word[0]
-    if yomi:
-        yomi = word[1]
-    else:
-        yomi = "*"
+
     if manbyo:
         tag = word[1]
+        
     node = mc.parseToNode(name)
     while node:
         node = node.next
@@ -57,17 +59,14 @@ def make_dic_format(word, tag, mc, yomi=False, manbyo=False):
             format_ += "*,"  # 品詞細分類3
             format_ += "*,"  # 活用形
             format_ += "*,"  # 活用型
-            format_ += tag + ","  if manbyo  else feature[6] + tag + "," # 原形
-            format_ += yomi + ","  # 読み
-            format_ += yomi  # 発音
+            format_ += tag + ","  # 原形
+            format_ += "*,"  # 読み
+            format_ += "*"  # 発音
             return format_
 
 
-parts = [part for part in read_csv(target_file="../dic/manbyo_seed.csv")]
-
+parts = [part for part in read_csv(target_file="../dic/part_seed.txt")]
 mc = MeCab.Tagger("")
-formats = [make_dic_format(word=word, tag=";part", mc=mc, manbyo=True) for word in parts]
-
-write_file(target_file="../dic/manbyo.txt", formats=formats)
+formats = [make_dic_format(word=word, tag=";part", mc=mc, manbyo=False) for word in parts]
+write_file(target_file="../dic/part.txt", formats=formats)
 print('completed ..')
-
