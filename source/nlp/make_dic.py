@@ -32,7 +32,7 @@ def make_dic_format(word, tag, mc, yomi=False, manbyo=False):
             format_ += node.surface + ","  # 表層形
             format_ += str(node.lcAttr) + ","  # 左文脈ID
             format_ += str(node.rcAttr) + ","  # 右文脈ID
-            if name.isalpha():
+            if name.encode('utf-8').isalnum():
                 format_ += "1,"   # 英単語は「1」で固定
             else:
                 format_ += str(node.wcost - 1) + ","  # 単語の生起コスト(既存コスト-1)
