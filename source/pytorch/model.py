@@ -112,3 +112,117 @@ class BiLSTM_CRF(nn.Module):
         emissions = self._get_lstm_features(sentence)
         return self.crf.decode(emissions, mask=mask, prob=True, n_best=n_best)
 
+class RcModel(nn.Module):
+    """
+    Relation Classification
+    """
+    def __init__(self, vocab_size, word_embedding_dim, entity_embedding_dim,
+                 entity_num, word_hidden_dim, entity_hidden_dim, hidden_dim, 
+                 batch_size, lstm_hidden_dim=0, use_attention=False, drop_out_rate=0.5):
+        super(RcModel, self).__init__()
+
+        self.vocab_size = vocab_size
+        self.word_embedding_dim = word_embedding_dim
+        self.entity_embedding_dim = entity_embedding_dim
+        self.lstm_hidden_dim = lstm_hidden_dim
+        self.word_hidden_dim = word_hidden_dim
+        self.entity_hidden_dim = entity_hidden_dim
+        self.hidden_dim = hidden_dim
+        self.entity_num = entity_num
+        self.use_attention = use_attention
+        self.batch_size = batch_size
+
+        self.loss_fct = CrossEntropyLoss()
+
+        self.dropout = nn.Dropout(drop_out_rate)
+
+        if lstm_hidden_dim:
+            self.bilstm = BiLSTM(vocab_size, word_embedding_dim, lstm_hidden_dim, batch_size, drop_out_rate)
+            self.attn = Attention(dimensions=lstm_hidden_dim)
+            self.fc_w = nn.Linear(lstm_hidden_dim, word_hidden_dim)
+        else:
+            self.word_embeds = nn.Embedding(vocab_size, word_embedding_dim, padding_idx=1)
+            self.attn = Attention(dimensions=word_embedding_dim)
+            self.fc_w = nn.Linear(word_embedding_dim, word_hidden_dim)
+
+        self.entity_embeds = nn.Embedding(entity_num, entity_embedding_dim)
+        
+        self.fc_e = nn.Linear(entity_embedding_dim, entity_hidden_dim)
+
+        self.fc_c = nn.Linear(word_hidden_dim*3 + entity_hidden_dim, hidden_dim)
+        
+        self.classifier  = nn.Linear(hidden_dim, 2)
+
+        self.tanh = nn.Tanh()
+        # self.activation = nn.ReLU()
+        self.activation = gelu
+
+    def attn_sum(self, x):
+        # x : [seq_length, 1, dimensions]
+        x = torch.transpose(x, 0, 1)
+        out, _ = self.attn(x, x)
+        return out.sum(dim=1)
+
+    def forward(self, inputs, masks, entities, labels):
+        """
+        inputs : (batch, seq_length)
+        masks : (batch, seq_length)
+        entities : (batch)
+        labels : (batch)
+        """
+
+        if self.lstm_hidden_dim:
+            inputs_feature = self.bilstm(inputs)
+        else:
+            inputs_feature = self.word_embeds(inputs)
+
+        inputs_feature = self.dropout(inputs_feature)
+
+        # get context representation
+        if self.use_attention:
+            obj_list = [self.attn_sum(out[(mask == 1).nonzero()])
+                                    for out, mask in zip(inputs_feature, masks)]
+
+            btwn_list = [self.attn_sum(out[(mask == 2).nonzero()])
+                                    for out, mask in zip(inputs_feature, masks)]
+
+            attr_list = [self.attn_sum(out[(mask == 3).nonzero()])
+                                    for out, mask in zip(inputs_feature, masks)]
+
+        else: # max pooling         
+            obj_list = [out[(mask == 1).nonzero().squeeze()].view(-1, self.word_embedding_dim).max(0)[0].unsqueeze(0) 
+                                    for out, mask in zip(inputs_feature, masks)]
+
+            btwn_list = [out[(mask == 2).nonzero().squeeze()].view(-1, self.word_embedding_dim).max(0)[0].unsqueeze(0) 
+                                    for out, mask in zip(inputs_feature, masks)]
+
+            attr_list = [out[(mask == 3).nonzero().squeeze()].view(-1, self.word_embedding_dim).max(0)[0].unsqueeze(0) 
+                                    for out, mask in zip(inputs_feature, masks)]
+
+        obj = torch.cat(obj_list)
+        obj = self.activation(self.fc_w(obj))
+        obj = self.dropout(obj)
+        
+        btwn = torch.cat(btwn_list)
+        btwn = self.activation(self.fc_w(btwn))
+        btwn = self.dropout(btwn)
+
+        attr = torch.cat(attr_list)
+        attr = self.activation(self.fc_w(attr))
+        attr = self.dropout(attr)
+
+        ent = self.entity_embeds(entities)
+        ent = self.activation(self.fc_e(ent))
+        ent = self.dropout(ent)
+
+        # concat
+        features = torch.cat([obj, btwn, attr, ent], dim=-1)
+
+        features = self.activation(self.fc_c(features))
+        features = self.dropout(features)
+
+        out = self.classifier(features)  # out : (batch, 2)
+
+        loss = self.loss_fct(out, labels)
+
+        return out, loss
